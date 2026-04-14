@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# VSCode
+.vscode/
+
+# Pytest
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Logs
+*.log
+flake8_output.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Self-hosted GitHub runner
+actions-runner/
+
+# Database
+*.db
+instance/
+
+
+frontend/node_modules/
+frontend/dist/
