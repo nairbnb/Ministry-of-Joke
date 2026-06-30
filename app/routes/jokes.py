@@ -1,64 +1,52 @@
 from flask import Blueprint, jsonify, request
+from app.models import db, Joke
 
-"""
-1st element : name of Blueprint
-2nd element : location(module) - app.routes.jokes
-"""
 jokes_bp = Blueprint('jokes', __name__)
 
-# In-memory store - no database yet.
-_jokes = []
 
-# If you receive GET request to /jokes, execute get_jokes()
 @jokes_bp.route('/jokes', methods=['GET'])
 def get_jokes():
-    """
-    Flask's jsonify function converts
-    Python Dictionary -> HTTP JSON Response
-    """
+    jokes = Joke.query.all()
     return (jsonify({
-        "data": {"jokes": _jokes},
+        "data": {"jokes": [{"id": j.id, "text": j.text} for j in jokes]},
         "status": "ok"
     }), 200)
-    """
-    When Flask receives a tuple as a return value, 
-    it automatically interprets:
-    - first element : Response Body
-    - second element : HTTP status code
-    """
+
 
 @jokes_bp.route('/jokes', methods=['POST'])
-def post_jokes():
-    """
-    HTTP Request from Browser or Postman
-    -> Packets
-    -> TCP protocol reassemble by OS
-    -> request object
-
-    .get_json() : parse request's body
-                -> JSON
-                -> Python Dictionary
-    (silent=True) : if parsing fails,
-                    return None instead of error.
-    """
+def post_joke():
     body = request.get_json(silent=True)
-    """
-    not body : if body is None or empty dictionary, {}
-    not body.get('text') : if body has no 'text' key or empty dictionary, {}
-    """
     if not body or not body.get('text'):
         return (jsonify({
             "error": {
-                "code": "VAILDATION_ERROR",
+                "code": "VALIDATION_ERROR",
                 "message": "The 'text' field is required."
             }
         }), 400)
-    joke = {"text": body['text']}
-    """
-    java: arraylist.add(joke)
-    """
-    _jokes.append(joke)
+
+    text = body['text']
+
+    if text.strip() == '':
+        return (jsonify({
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "The 'text' field cannot be whitespace only."
+            }
+        }), 400)
+
+    if len(text) > 500:
+        return (jsonify({
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "The 'text' field cannot exceed 500 characters."
+            }
+        }), 400)
+
+    joke = Joke(text=text, submitted_by=1)
+    db.session.add(joke)
+    db.session.commit()
+
     return (jsonify({
-        "data": joke,
-        "status": "ok"
+        "data": {"id": joke.id, "text": joke.text},
+        "status": "created"
     }), 201)
