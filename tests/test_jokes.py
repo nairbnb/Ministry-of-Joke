@@ -1,13 +1,4 @@
-import pytest
-from app import create_app
-
-@pytest.fixture
-def client():
-    app = create_app()
-    app.config['TESTING'] = True
-    with app.test_client() as client:
-        yield client
-
+# import pytest
 def test_get_jokes_returns_empty_list(client):
     """
     GIVEN a fresh MoJ application with no jokes submitted
@@ -31,8 +22,12 @@ def test_submit_joke_valid(client):
 
     Level: HAPPY PATH
     """
-    
-    pass
+    response = client.post('/jokes', json={'text': 'Why programmers wear glasses?'})
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data['status'] == 'created'
+    assert isinstance(data['data'].get('id'), int)
+    assert data['data']['text'] == 'Why programmers wear glasses?'
 
 
 def test_submit_joke_max_length(client):
@@ -43,18 +38,29 @@ def test_submit_joke_max_length(client):
 
     Level: EDGE CASE
     """
-    pass
+    max_text = 'A' * 500
+    response = client.post('/jokes',
+                           json={'text': max_text})
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data['status'] == 'created'
+    assert len(data['data']['text']) == 500
 
 
 def test_submit_joke_empty_text(client):
     """
     GIVEN a running MoJ application
-    WHEN a POST request is made to /jokes with an empty string as the text field
+    WHEN a POST request is made to /jokes
+         with an empty string as the text field
     THEN the response should be 400 Bad Request
 
     Level: ERROR CASE
     """
-    pass
+    response = client.post('/jokes',
+                           json={'text': ""})
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data['error']['code'] == 'VALIDATION_ERROR'
 
 
 def test_submit_joke_over_max_length(client):
@@ -65,15 +71,25 @@ def test_submit_joke_over_max_length(client):
 
     Level: EDGE CASE
     """
-    pass
+    over_text = 'A' * 501
+    response = client.post('/jokes',
+                           json={'text': over_text})
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data['error']['code'] == 'VALIDATION_ERROR'
 
 
 def test_submit_joke_whitespace_only(client):
     """
     GIVEN a running MoJ application
-    WHEN a POST request is made to /jokes with text consisting entirely of whitespace
+    WHEN a POST request is made to /jokes
+         with text consisting entirely of whitespace
     THEN the response should be 400 Bad Request
 
     Level: EDGE CASE
     """
-    pass
+    response = client.post('/jokes',
+                           json={'text': '     '})
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data['error']['code'] == 'VALIDATION_ERROR'
